@@ -2,6 +2,7 @@ import struct
 import zlib
 import os
 import fnmatch
+import re
 
 class RafFile():
 	pass		
@@ -69,6 +70,16 @@ class RafCollection():
 			for filename in os.listdir(os.path.join(path, item)):
 				if fnmatch.fnmatch(filename, '*.raf'):
 					self.index[item] = RafArchive(os.path.join(path, item, filename))
+
+	def search(self, text):
+		matching_archives = list()
+		for item,raf in self.index.iteritems():
+			for path,archive in raf.index.iteritems():
+				if(re.search(text, path, re.IGNORECASE)):
+					matching_archives.append(archive)
+		return matching_archives
+
+
 					
 
  
