@@ -5,7 +5,19 @@ import fnmatch
 import re
 
 class RafFile():
-	pass		
+	def __init__(self, dat_file_location):
+		self.dat_file_location = dat_file_location
+
+	def extract(self):
+		with open(self.dat_file_location, 'rb') as fd:
+			fd.seek(self.data_offset)
+			raw_data = fd.read(self.data_size)
+			try:
+				data = zlib.decompress(raw_data)
+			except:
+				self.uncompressed = True
+				data = raw_data
+		return data
 
 
 class RafArchive():
@@ -25,7 +37,7 @@ class RafArchive():
 			f.seek(file_list_offset);
 			file_entries_count = struct.unpack("<I", f.read(4))[0]
 			for i in range(file_entries_count):
-				raf = RafFile()
+				raf = RafFile(path + ".dat")
 				raf.hash = struct.unpack("<I", f.read(4))[0]
 				raf.data_offset = struct.unpack("<I", f.read(4))[0]
 				raf.data_size = struct.unpack("<I", f.read(4))[0]
@@ -50,17 +62,6 @@ class RafArchive():
 				raffile.path = paths[raffile.path_list_index]
 				self.index[raffile.path] = raffile
 
-	def extract(self, raf_file):
-		with open(self.path + '.dat', 'rb') as fd:
-			fd.seek(raf_file.data_offset)
-			raw_data = fd.read(raf_file.data_size)
-			try:
-				data = zlib.decompress(raw_data)
-			except:
-				raf_file.uncompressed = True
-				data = raw_data
-		return data
-
 
 class RafCollection():
 	def __init__(self, path):
@@ -78,6 +79,7 @@ class RafCollection():
 				if(re.search(text, path, re.IGNORECASE)):
 					matching_archives.append(archive)
 		return matching_archives
+
 
 
 					
