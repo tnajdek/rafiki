@@ -11,5 +11,5 @@ def mkdir_p(path):
 
 def convert_lol_path(path):
 	if(os.sep != '/'):
-		path = pat.replace("/", os.sep)
+		path = path.replace("/", os.sep)
 	return path
