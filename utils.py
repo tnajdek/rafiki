@@ -10,6 +10,6 @@ def mkdir_p(path):
 
 
 def convert_lol_path(path):
-	if(os.pathsep != '/'):
-		raise Exception("Not implementedy yet :(")
+	if(os.sep != '/'):
+		path = pat.replace("/", os.sep)
 	return path

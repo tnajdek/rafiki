@@ -9,22 +9,26 @@ class RafFile():
 		self.archive = archive
 		self.dat_file_location = self.archive.path + ".dat"
 		self.data = None
+		self.uncompressed = False
 
 	def extract(self):
 		with open(self.dat_file_location, 'rb') as fd:
 			fd.seek(self.data_offset)
-			raw_data = fd.read(self.data_size)
+			self.raw_data = fd.read(self.data_size)
 			try:
-				data = zlib.decompress(raw_data)
+				data = zlib.decompress(self.raw_data)
 			except:
 				self.uncompressed = True
-				data = raw_data
-		self.data = data
-		return data
+				self.data = self.raw_data
+		return self.data
 
 	def insert(self, data):
 		self.data = data
-		self.data_size = len(data)
+		if(self.uncompressed):
+			self.raw_data = data
+		else:
+			self.raw_data = zlib.compress(data)
+		self.data_size = len(self.raw_data)
 
 
 class RafArchive():
@@ -71,8 +75,8 @@ class RafArchive():
 				raffile.path = self.paths[raffile.path_list_index]
 				self.index[raffile.path] = raffile
 
-	def export(self, path):
-		with open(path, "wb") as f:
+	def export(self, export_path):
+		with open(export_path, "wb") as f:
 			# HEADER
 			f.write(self.magic_number)
 			f.write(struct.pack("<I", self.version))
@@ -121,11 +125,11 @@ class RafArchive():
 				assert self.path_list_offset + paths_data[i]['path_offset'] == f.tell()
 				f.write(self.paths[i] + "\x00")
 		
-		with open(path + ".dat", "wb") as f:
+		with open(export_path + ".dat", "wb") as f:
 			for raf_file in self.files:
 				if(not raf_file.data):
 					raf_file.extract()
-				f.write(raf_file.data)
+				f.write(raf_file.raw_data)
 
 
 
