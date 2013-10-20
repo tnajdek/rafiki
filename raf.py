@@ -5,8 +5,10 @@ import fnmatch
 import re
 
 class RafFile():
-	def __init__(self, dat_file_location):
-		self.dat_file_location = dat_file_location
+	def __init__(self, archive):
+		self.archive = archive
+		self.dat_file_location = self.archive.path + ".dat"
+		self.data = None
 
 	def extract(self):
 		with open(self.dat_file_location, 'rb') as fd:
@@ -17,7 +19,12 @@ class RafFile():
 			except:
 				self.uncompressed = True
 				data = raw_data
+		self.data = data
 		return data
+
+	def insert(self, data):
+		self.data = data
+		self.data_size = len(data)
 
 
 class RafArchive():
@@ -38,7 +45,7 @@ class RafArchive():
 			
 			self.file_entries_count = struct.unpack("<I", f.read(4))[0]
 			for i in range(self.file_entries_count):
-				raf = RafFile(path + ".dat")
+				raf = RafFile(self)
 				raf.hash = struct.unpack("<I", f.read(4))[0]
 				raf.data_offset = struct.unpack("<I", f.read(4))[0]
 				raf.data_size = struct.unpack("<I", f.read(4))[0]
@@ -64,7 +71,7 @@ class RafArchive():
 				raffile.path = self.paths[raffile.path_list_index]
 				self.index[raffile.path] = raffile
 
-	def save(self, path):
+	def export(self, path):
 		with open(path, "wb") as f:
 			# HEADER
 			f.write(self.magic_number)
@@ -77,11 +84,13 @@ class RafArchive():
 
 			#FILE LIST
 			f.write(struct.pack("<I", self.file_entries_count))
+			data_file_offset = 0
 			for raf_file in self.files:
 				f.write(struct.pack("<I", raf_file.hash))
-				f.write(struct.pack("<I", raf_file.data_offset))
+				f.write(struct.pack("<I", data_file_offset))
 				f.write(struct.pack("<I", raf_file.data_size))
 				f.write(struct.pack("<I", raf_file.path_list_index))
+				data_file_offset = data_file_offset + raf_file.data_size
 
 			assert self.path_list_offset == f.tell()
 
@@ -111,6 +120,13 @@ class RafArchive():
 			for i in range(len(self.paths)):
 				assert self.path_list_offset + paths_data[i]['path_offset'] == f.tell()
 				f.write(self.paths[i] + "\x00")
+		
+		with open(path + ".dat", "wb") as f:
+			for raf_file in self.files:
+				if(not raf_file.data):
+					raf_file.extract()
+				f.write(raf_file.data)
+
 
 
 class RafCollection():
