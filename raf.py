@@ -16,7 +16,7 @@ class RafFile():
 			fd.seek(self.data_offset)
 			self.raw_data = fd.read(self.data_size)
 			try:
-				data = zlib.decompress(self.raw_data)
+				self.data = zlib.decompress(self.raw_data)
 			except:
 				self.uncompressed = True
 				self.data = self.raw_data
