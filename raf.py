@@ -141,6 +141,7 @@ class RafCollection():
 			for filename in os.listdir(os.path.join(path, item)):
 				if fnmatch.fnmatch(filename, '*.raf'):
 					self.index[item] = RafArchive(os.path.join(path, item, filename))
+					self.index[item].lol_patch_string = item
 
 	def search(self, text):
 		matching_archives = list()
