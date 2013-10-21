@@ -21,9 +21,9 @@ for raf_file in files:
 	try:
 		with open(file_path, 'rb') as f:
 			raf_file.insert(f.read())
-		# print("Creating override for %s in %s" % (raf_file.path, raf_file.archive.path))
+		print("Creating override for %s in %s" % (raf_file.path, raf_file.archive.path))
 	except IOError:
-		# print("NOT FOUND: %s" % file_path)
+		print("NOT FOUND: %s" % file_path)
 		pass
 
 	archives.add(raf_file.archive)
