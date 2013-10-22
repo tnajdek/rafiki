@@ -3,6 +3,8 @@ Riot Archive File
 
 Python API for reading and writing to a **raf** format used by RIOT's game Leauge of Legends. Code is still in development and might need some cleanup, patches welcome. Developed on Linux, tested on Mac and Windows (for platform's native version of the game). Yeah, I think it's weird too.
 
+** THIS IS EARLY DEVELOPMENT VERSION. THERE WILL BE BUGS ** 
+
 Helper/Example Scripts
 ----------------------
 
