@@ -42,7 +42,13 @@ parser.add_argument("-r",
 
 args = parser.parse_args()
 
-basepath = "extracted"
+basepath = args.out_path
+if(not args.out_path):
+	if(args.action == "extract"):
+		basepath = "extracted"
+	else:
+		basepath = "packed"
+
 if(not os.path.isdir(args.source_path)):
 	print('"%s" is not a directory, please provide full path to LOL' % args.source_path)
 	sys.exit()
@@ -52,9 +58,31 @@ if(args.filter):
 	files = collection.search("hud2012")
 else:
 	files = collection.index.values()
-# for raf_file in files:
-# 	data = raf_file.extract()
-# 	raf_file_path = convert_lol_path(raf_file.path)
-# 	mkdir_p(basepath + os.sep + os.path.dirname(raf_file_path))
-# 	with open(basepath + os.sep + raf_file_path, 'wb') as target_file:
-# 		target_file.write(data)
+
+if(args.action == 'extract'):
+	for raf_file in files:
+		data = raf_file.extract()
+		raf_file_path = convert_lol_path(raf_file.path)
+		mkdir_p(basepath + os.sep + os.path.dirname(raf_file_path))
+		with open(basepath + os.sep + raf_file_path, 'wb') as target_file:
+	 		target_file.write(data)
+
+if(args.action == 'pack'):
+	archives = set()
+	for raf_file in files:
+		raf_file_path = convert_lol_path(raf_file.path)
+		file_path = args.override + raf_file_path
+		try:
+			with open(file_path, 'rb') as f:
+				raf_file.insert(f.read())
+			print("Using override for %s in %s" % (raf_file.path, raf_file.archive.path))
+		except IOError:
+			pass
+
+	archives.add(raf_file.archive)
+
+	for archive in archives:
+		# archive.path includes ..
+		archive_override_path = basepath + os.sep + archive.path
+		mkdir_p(os.path.dirname(archive_override_path))
+		archive.export(archive_override_path)
