@@ -143,6 +143,13 @@ class RafCollection():
 					self.index[item] = RafArchive(os.path.join(path, item, filename))
 					self.index[item].lol_patch_string = item
 
+	def archives(self):
+		archives = list()
+		for item,raf in self.index.iteritems():
+			for path,archive in raf.index.iteritems():
+				archives.append(archive)
+		return archives
+
 	def search(self, text):
 		matching_archives = list()
 		for item,raf in self.index.iteritems():

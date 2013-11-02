@@ -55,9 +55,9 @@ if(not os.path.isdir(args.source_path)):
 
 collection = RafCollection(args.source_path)
 if(args.filter):
-	files = collection.search("hud2012")
+	files = collection.search(args.filter)
 else:
-	files = collection.index.values()
+	files = collection.archives()
 
 if(args.action == 'extract'):
 	for raf_file in files:
