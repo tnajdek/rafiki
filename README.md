@@ -1,5 +1,5 @@
-Riot Archive File
------------------
+RAFIKI - Riot Archive File extractor & packer
+-------------------------------------------
 
 Python API for reading and writing to a **raf** format used by RIOT's game Leauge of Legends. Code is still in development and might need some cleanup, patches welcome. Developed on Linux, tested on Mac and Windows (for platform's native version of the game). Yeah, I think it's weird too.
 
@@ -10,11 +10,11 @@ Helper/Example Scripts
 
 Extract all files containing **hud2012** string in its path. This will create a new folder **extracted** wher relevant files will be placed (under their full RAF path):
 
-    python extract.py path_to_lol/rads/projects/lol_game_client/filearchives "hud2012"
+    python rafiki.py extract -s path_to_lol/rads/projects/lol_game_client/filearchives -f "hud2012" -o extracted
     
 Find all files containing string **hud2012**, then search for file overrides in a folder named **extracted** and if an override exists, replace the file before packing everything back into archives. A new folder **overrides** will be created where relevant **raf** archives will be placed. You need to copy these files manually to actually include overrides in the game.
 
-    python pack.py path_to_lol/rads/projects/lol_game_client/filearchives "hud2012" extracted
+    python rafiki.py pack -s path_to_lol/rads/projects/lol_game_client/filearchives -f "hud2012" -r extracted
     
     
 Note: Running on Windows
