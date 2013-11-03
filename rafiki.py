@@ -6,7 +6,7 @@ import argparse
 from raf import RafCollection
 from utils import mkdir_p, convert_lol_path
 
-
+SCRIPT_ROOT = os.path.dirname(os.path.realpath(__file__))
 
 parser = argparse.ArgumentParser(description='Extract or Pack files from/to Riot Archive Format, optionally filtering extracted file paths')
 parser.add_argument('action',
@@ -49,6 +49,9 @@ if(not args.out_path):
 	else:
 		basepath = "packed"
 
+if(not os.path.isabs(basepath)):
+	basepath = os.path.join(SCRIPT_ROOT, basepath)
+
 if(not os.path.isdir(args.source_path)):
 	print('"%s" is not a directory, please provide full path to LOL' % args.source_path)
 	sys.exit()
@@ -71,18 +74,17 @@ if(args.action == 'pack'):
 	archives = set()
 	for raf_file in files:
 		raf_file_path = convert_lol_path(raf_file.path)
-		file_path = args.override + raf_file_path
+		file_path = os.path.join(args.override, raf_file_path)
 		try:
 			with open(file_path, 'rb') as f:
 				raf_file.insert(f.read())
 			print("Using override for %s in %s" % (raf_file.path, raf_file.archive.path))
 		except IOError:
 			pass
-
-	archives.add(raf_file.archive)
+		archives.add(raf_file.archive)
 
 	for archive in archives:
-		# archive.path includes ..
-		archive_override_path = basepath + os.sep + archive.path
+		archive_override_path = os.path.join(basepath, archive.lol_patch_string, os.path.basename(archive.path))
 		mkdir_p(os.path.dirname(archive_override_path))
+		print("Writing archive \"%s\"" % archive_override_path)
 		archive.export(archive_override_path)
