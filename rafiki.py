@@ -57,14 +57,13 @@ if(not args.out_path):
 if(not os.path.isabs(basepath)):
 	basepath = os.path.join(SCRIPT_ROOT, basepath)
 
-source_path = args.source_path
-if(not os.path.isdir(source_path)):
-	print('"%s" is not a directory, please provide full path to Leauge of Legends' % source_path)
+if(not os.path.isdir(args.source_path)):
+	print('"%s" is not a directory, please provide full path to Leauge of Legends' % args.source_path)
 	sys.exit()
 
 
 for path in FILE_ARCHIVE_POSSIBLE_PATHS:
-	source_path = os.path.join(source_path, convert_lol_path(path))
+	source_path = os.path.join(args.source_path, convert_lol_path(path))
 	if(os.path.isdir(source_path)):
 		break
 
