@@ -69,7 +69,7 @@ for path in FILE_ARCHIVE_POSSIBLE_PATHS:
 		break
 
 if(not os.path.isdir(source_path)):
-	print("Unable to find filearchives in \"%s\", are you sure this is valid path to Leauge of Legends?")
+	print("Unable to find filearchives in \"%s\", are you sure this is valid path to Leauge of Legends?" % source_path)
 	sys.exit()
 
 
