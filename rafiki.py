@@ -8,6 +8,11 @@ from utils import mkdir_p, convert_lol_path
 
 SCRIPT_ROOT = os.path.dirname(os.path.realpath(__file__))
 
+FILE_ARCHIVE_POSSIBLE_PATHS = [
+	'Contents/LoL/RADS/projects/lol_game_client/filearchives/',
+	'rads/projects/lol_game_client/filearchives/'
+]
+
 parser = argparse.ArgumentParser(description='Extract or Pack files from/to Riot Archive Format, optionally filtering extracted file paths')
 parser.add_argument('action',
 	metavar='action',
@@ -52,11 +57,23 @@ if(not args.out_path):
 if(not os.path.isabs(basepath)):
 	basepath = os.path.join(SCRIPT_ROOT, basepath)
 
-if(not os.path.isdir(args.source_path)):
-	print('"%s" is not a directory, please provide full path to LOL' % args.source_path)
+source_path = args.source_path
+if(not os.path.isdir(source_path)):
+	print('"%s" is not a directory, please provide full path to Leauge of Legends' % source_path)
 	sys.exit()
 
-collection = RafCollection(args.source_path)
+
+for path in FILE_ARCHIVE_POSSIBLE_PATHS:
+	source_path = os.path.join(source_path, convert_lol_path(path))
+	if(os.path.isdir(source_path)):
+		break
+
+if(not os.path.isdir(source_path)):
+	print("Unable to find filearchives in \"%s\", are you sure this is valid path to Leauge of Legends?")
+	sys.exit()
+
+
+collection = RafCollection(source_path)
 if(args.filter):
 	files = collection.search(args.filter)
 else:
