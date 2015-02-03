@@ -3,8 +3,8 @@ import os
 import sys
 import argparse
 
-from raf import RafCollection
-from utils import mkdir_p, convert_lol_path
+from raf.raf import RafCollection
+from raf.utils import mkdir_p, convert_lol_path
 
 SCRIPT_ROOT = os.path.dirname(os.path.realpath(__file__))
 

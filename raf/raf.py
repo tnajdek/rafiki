@@ -4,6 +4,7 @@ import os
 import fnmatch
 import re
 
+
 class RafFile():
 	def __init__(self, archive):
 		self.archive = archive
@@ -157,9 +158,3 @@ class RafCollection():
 				if(re.search(text, path, re.IGNORECASE)):
 					matching_archives.append(archive)
 		return matching_archives
-
-
-
-					
-
- 
