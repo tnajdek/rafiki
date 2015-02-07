@@ -65,7 +65,7 @@ class BaseRafArchive(object):
 			paths_list_offset = struct.unpack("<I", f.read(4))[0]
 
 			assert files_list_offset == f.tell()
-			
+
 			file_entries_count = struct.unpack("<I", f.read(4))[0]
 			for i in range(file_entries_count):
 				raf = RafFile(self)
@@ -82,7 +82,7 @@ class BaseRafArchive(object):
 			path_list_start_offset = f.tell()
 
 			for i in range(path_list_count):
-				f.seek(path_list_start_offset + (i)*8)
+				f.seek(path_list_start_offset + (i) * 8)
 				path_offset = struct.unpack("<I", f.read(4))[0]
 				path_length = struct.unpack("<I", f.read(4))[0]
 				f.seek(paths_list_offset + path_offset)
@@ -95,17 +95,18 @@ class BaseRafArchive(object):
 				assert riot_hash(raffile.path) == raffile.hash
 				self.index[raffile.path] = raffile
 
-	def export(self, export_path):
+	def save(self, save_path=None):
+		save_path = save_path or self.path
 		if(len(self.paths) == 0):
 			raise Exception("Archive should contain at least one file")
 
-		with open(export_path, "wb") as f:
+		with open(save_path, "wb") as f:
 			# header length is constant. It consists of:
-			# 4 bytes for magic number 
+			# 4 bytes for magic number
 			# 4 bytes for version (usually 1)
 			# 4 bytes for manager_undex (usually 0)
 			# 4 bytes for offset of the files list
-			# 4 bytes for offset of the paths list 
+			# 4 bytes for offset of the paths list
 			header_length = files_list_offset = 20
 
 			# Files list length depends on the amount of files stored inside the archive:
@@ -132,17 +133,16 @@ class BaseRafArchive(object):
 			paths_list_length = 8 + (len(self.paths) * 8) + literals_length
 			eof = header_length + files_list_length + paths_list_length
 
-
 			# HEADER
 			f.write(self.MAGIC_NUMBER)
-			f.write(struct.pack("<I", self.version))
-			f.write(struct.pack("<I", self.manager_index))
+			f.write(struct.pack("<I", getattr(self, 'version', 1)))
+			f.write(struct.pack("<I", getattr(self, 'manager_index', 0)))
 			f.write(struct.pack("<I", files_list_offset))
 			f.write(struct.pack("<I", paths_list_offest))
 
 			assert files_list_offset == f.tell()
 
-			#FILE LIST
+			# FILE LIST
 			f.write(struct.pack("<I", len(self.paths)))
 			data_file_offset = 0
 
@@ -157,7 +157,7 @@ class BaseRafArchive(object):
 
 			assert paths_list_offest == f.tell()
 
-			#PATH LIST
+			# PATH LIST
 			f.write(struct.pack("<I", paths_list_length))
 			f.write(struct.pack("<I", len(self.paths)))
 
@@ -166,7 +166,7 @@ class BaseRafArchive(object):
 			path_offset = paths_list_offest + 8 + len(self.paths) * 8
 
 			paths_data = list()
-			for path in self.paths: 
+			for path in self.paths:
 				path = path + "\x00"
 				paths_data.append({
 					"path_offset": path_offset - paths_list_offest,
@@ -184,7 +184,7 @@ class BaseRafArchive(object):
 
 			assert eof == f.tell()
 
-		with open(export_path + ".dat", "wb") as f:
+		with open(save_path + ".dat", "wb") as f:
 			for raf_file in self.files:
 				if(not raf_file.data):
 					raf_file.extract()

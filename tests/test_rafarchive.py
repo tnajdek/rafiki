@@ -24,7 +24,7 @@ class TestExporting(unittest.TestCase):
 			data = raf_file.extract()
 			data = data[:len(data) / 2] + "testword" + data[:len(data) / 2]
 			raf_file.insert(data)
-		self.archive.export(exported_raf_file)
+		self.archive.save(exported_raf_file)
 
 		exported_archive = RafArchive(exported_raf_file)
 		for path, raf_file in exported_archive.index.iteritems():
@@ -40,11 +40,11 @@ class TestExporting(unittest.TestCase):
 		fakefile.path = "DATA/Trolls/Are/funny.txt"
 		fakefile.insert(fakeContent)
 		fakeArchive.addRafFile(fakefile)
-		fakeArchive.export(self.tmp_dir)
+		fakeArchive.save()
 
 		archive = RafArchive(fakeRafPath)
 		self.assertEqual(len(archive.index.keys()), 1)
-		self.assertIn(fakefile.path, archive.index.keys)
+		self.assertIn(fakefile.path, archive.index.keys())
 		self.assertEqual(archive.index[fakefile.path].extract(), fakeContent)
 
 	def test_read_real_raf(self):
@@ -65,7 +65,7 @@ class TestExporting(unittest.TestCase):
 				with open(os.path.join(self.tmp_dir, os.path.basename(convert_lol_path(path))), 'rb') as f:
 					raf_file.insert(f.read())
 
-		self.archive.export(exported_raf_file)
+		self.archive.save(exported_raf_file)
 		exported_archive = RafArchive(exported_raf_file)
 		for path, raf_file in exported_archive.index.iteritems():
 			if(path.find("fontconfig_pl_PL") > -1):
