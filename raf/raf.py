@@ -37,6 +37,7 @@ class RafFile():
 
 class BaseRafArchive(object):
 	MAGIC_NUMBER = '\xf0\x0e\xbe\x18'
+
 	def __init__(self, path):
 		self.files = list()
 		self.paths = list()
@@ -214,10 +215,13 @@ class RafCollection():
 				raffiles.append(raffile)
 		return raffiles
 
-	def search(self, text):
-		matching_archives = list()
-		for item, raf in self.index.iteritems():
-			for path, archive in raf.index.iteritems():
-				if(re.search(text, path, re.IGNORECASE)):
-					matching_archives.append(archive)
-		return matching_archives
+	def search(self, text, caseinsensitive=True):
+		matching_raffiles = list()
+		flags = 0
+		if(caseinsensitive):
+			flags = re.IGNORECASE
+		for relpath, rafarchive in self.index.iteritems():
+			for path_in_raf, raffile in rafarchive.index.iteritems():
+				if(re.search(text, path_in_raf, flags=flags)):
+					matching_raffiles.append(raffile)
+		return matching_raffiles

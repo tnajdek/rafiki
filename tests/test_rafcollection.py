@@ -20,5 +20,7 @@ class TestCollections(unittest.TestCase):
 	def test_includes_all_raf_archives(self):
 		self.assertEqual(len(self.collection.index.keys()), 3)
 
-	def test_returns_all_raffiles(self):
-		raffiles = self.collection.raffiles()
+	def test_search(self):
+		raffiles = self.collection.search("pl_PL")
+		self.assertEqual(len(raffiles), 1)
+		self.assertEqual(raffiles[0].path, "DATA/Menu/fontconfig_pl_PL.txt")
