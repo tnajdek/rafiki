@@ -4,6 +4,8 @@ import os
 import fnmatch
 import re
 
+from utils import riot_hash
+
 
 class RafFile():
 	def __init__(self, archive):
@@ -16,11 +18,12 @@ class RafFile():
 		with open(self.dat_file_location, 'rb') as fd:
 			fd.seek(self.data_offset)
 			self.raw_data = fd.read(self.data_size)
+			# some data is compressed with zlib, some is not
 			try:
 				self.data = zlib.decompress(self.raw_data)
-			except:
-				self.uncompressed = True
+			except Exception:
 				self.data = self.raw_data
+			self.uncompressed = True
 		return self.data
 
 	def insert(self, data):
@@ -32,24 +35,39 @@ class RafFile():
 		self.data_size = len(self.raw_data)
 
 
-class RafArchive():
+class BaseRafArchive(object):
+	MAGIC_NUMBER = '\xf0\x0e\xbe\x18'
 	def __init__(self, path):
 		self.files = list()
 		self.paths = list()
 		self.index = dict()
 		self.path = path
 
-		with open(path, "rb") as f:
-			self.magic_number = f.read(4)
+	def addRafFile(self, raffile):
+		raffile.archive = self
+		if(not raffile.path):
+			raise Exception("Raf File needs to have a path in order to be appended to the archive")
+		self.files.append(raffile)
+		self.paths.append(raffile.path)
+
+	def delRafFile(self, raffile):
+		assert raffile in self.files
+		assert raffile.path in self.paths
+		self.files.remove(raffile)
+		self.paths.remove(raffile.path)
+
+	def open(self):
+		with open(self.path, "rb") as f:
+			magic_number = f.read(4)
 			self.version = struct.unpack("<I", f.read(4))[0]
 			self.manager_index = struct.unpack("<I", f.read(4))[0]
-			self.file_list_offset = struct.unpack("<I", f.read(4))[0]
-			self.path_list_offset = struct.unpack("<I", f.read(4))[0]
+			files_list_offset = struct.unpack("<I", f.read(4))[0]
+			paths_list_offset = struct.unpack("<I", f.read(4))[0]
 
-			assert self.file_list_offset == f.tell()
+			assert files_list_offset == f.tell()
 			
-			self.file_entries_count = struct.unpack("<I", f.read(4))[0]
-			for i in range(self.file_entries_count):
+			file_entries_count = struct.unpack("<I", f.read(4))[0]
+			for i in range(file_entries_count):
 				raf = RafFile(self)
 				raf.hash = struct.unpack("<I", f.read(4))[0]
 				raf.data_offset = struct.unpack("<I", f.read(4))[0]
@@ -57,63 +75,101 @@ class RafArchive():
 				raf.path_list_index = struct.unpack("<I", f.read(4))[0]
 				self.files.append(raf)
 
-			assert self.path_list_offset == f.tell()
+			assert paths_list_offset == f.tell()
 
-			self.path_list_size = struct.unpack("<I", f.read(4))[0]
-			self.path_list_count = struct.unpack("<I", f.read(4))[0]
+			path_list_size = struct.unpack("<I", f.read(4))[0]
+			path_list_count = struct.unpack("<I", f.read(4))[0]
 			path_list_start_offset = f.tell()
 
-			for i in range(self.path_list_count):
+			for i in range(path_list_count):
 				f.seek(path_list_start_offset + (i)*8)
 				path_offset = struct.unpack("<I", f.read(4))[0]
 				path_length = struct.unpack("<I", f.read(4))[0]
-				f.seek(self.path_list_offset + path_offset)
+				f.seek(paths_list_offset + path_offset)
 				path = f.read(path_length)
 				path = path.strip('\x00')
 				self.paths.append(path)
 
 			for raffile in self.files:
 				raffile.path = self.paths[raffile.path_list_index]
+				assert riot_hash(raffile.path) == raffile.hash
 				self.index[raffile.path] = raffile
 
 	def export(self, export_path):
+		if(len(self.paths) == 0):
+			raise Exception("Archive should contain at least one file")
+
 		with open(export_path, "wb") as f:
+			# header length is constant. It consists of:
+			# 4 bytes for magic number 
+			# 4 bytes for version (usually 1)
+			# 4 bytes for manager_undex (usually 0)
+			# 4 bytes for offset of the files list
+			# 4 bytes for offset of the paths list 
+			header_length = files_list_offset = 20
+
+			# Files list length depends on the amount of files stored inside the archive:
+			# 4 bytes for count store (total number of files)
+			# Then for each file:
+			# 	4 bytes for file hash
+			# 	4 bytes for the offset from the beginning of the associated .raf.dat file.
+			# 	4 bytes for the size of the data stored in the associated .raf.dat file.
+			# 	4 bytes for the index (counting from 0) into the path list
+			files_list_length = 4 + (len(self.files) * 16)
+			paths_list_offest = header_length + files_list_length
+
+			# Paths are stored in ASCII hence paths lists length depends on the number of files
+			# and the literal lenght of each file. Paths lists consists of:
+			# 4 bytes for the number of bytes contained in the paths lists
+			# 4 bytes for the number of entries in the paths lists (total number of files)
+			# Then for each file:
+			# 	4 bytes for the  offset from the path list (not the beginning of the file)
+			# 	4 bytes the length of the path string in bytes.
+			# Then for each file:
+			# 	n bytes for the literal ASCII-encoded path string
+			# 	1 byte for the termination character (\x00)
+			literals_length = sum([len(path) + 1 for path in self.paths])
+			paths_list_length = 8 + (len(self.paths) * 8) + literals_length
+			eof = header_length + files_list_length + paths_list_length
+
+
 			# HEADER
-			f.write(self.magic_number)
+			f.write(self.MAGIC_NUMBER)
 			f.write(struct.pack("<I", self.version))
 			f.write(struct.pack("<I", self.manager_index))
-			f.write(struct.pack("<I", self.file_list_offset))
-			f.write(struct.pack("<I", self.path_list_offset))
+			f.write(struct.pack("<I", files_list_offset))
+			f.write(struct.pack("<I", paths_list_offest))
 
-			assert self.file_list_offset == f.tell()
+			assert files_list_offset == f.tell()
 
 			#FILE LIST
-			f.write(struct.pack("<I", self.file_entries_count))
+			f.write(struct.pack("<I", len(self.paths)))
 			data_file_offset = 0
+
+			assert len(self.files) == len(self.paths)
+
 			for raf_file in self.files:
-				f.write(struct.pack("<I", raf_file.hash))
+				f.write(struct.pack("<I", riot_hash(raf_file.path)))
 				f.write(struct.pack("<I", data_file_offset))
 				f.write(struct.pack("<I", raf_file.data_size))
-				f.write(struct.pack("<I", raf_file.path_list_index))
+				f.write(struct.pack("<I", self.paths.index(raf_file.path)))
 				data_file_offset = data_file_offset + raf_file.data_size
 
-			assert self.path_list_offset == f.tell()
+			assert paths_list_offest == f.tell()
 
 			#PATH LIST
-			f.write(struct.pack("<I", self.path_list_size))
-			f.write(struct.pack("<I", self.path_list_count))
-
-			assert len(self.paths) == self.path_list_count
+			f.write(struct.pack("<I", paths_list_length))
+			f.write(struct.pack("<I", len(self.paths)))
 
 			# path list offset + 8 bytes for path_list_size adn
 			# path_list count + 8 bytes for each path_data entry
-			path_offset = self.path_list_offset + 8 + len(self.paths)*8
+			path_offset = paths_list_offest + 8 + len(self.paths) * 8
 
 			paths_data = list()
 			for path in self.paths: 
 				path = path + "\x00"
 				paths_data.append({
-					"path_offset": path_offset - self.path_list_offset,
+					"path_offset": path_offset - paths_list_offest,
 					"path_length": len(path)
 				})
 				path_offset = path_offset + len(path)
@@ -123,9 +179,11 @@ class RafArchive():
 				f.write(struct.pack("<I", path_data['path_length']))
 
 			for i in range(len(self.paths)):
-				assert self.path_list_offset + paths_data[i]['path_offset'] == f.tell()
+				assert paths_list_offest + paths_data[i]['path_offset'] == f.tell()
 				f.write(self.paths[i] + "\x00")
-		
+
+			assert eof == f.tell()
+
 		with open(export_path + ".dat", "wb") as f:
 			for raf_file in self.files:
 				if(not raf_file.data):
@@ -133,28 +191,33 @@ class RafArchive():
 				f.write(raf_file.raw_data)
 
 
+class RafArchive(BaseRafArchive):
+	def __init__(self, path):
+		super(RafArchive, self).__init__(path)
+		self.open()
+
 
 class RafCollection():
 	def __init__(self, path):
 		self.index = dict()
-		items = os.listdir(path)
-		for item in items:
-			for filename in os.listdir(os.path.join(path, item)):
-				if fnmatch.fnmatch(filename, '*.raf'):
-					self.index[item] = RafArchive(os.path.join(path, item, filename))
-					self.index[item].lol_patch_string = item
+		self.root_path = path
+		for root, dirnames, filenames in os.walk(path):
+			for filename in fnmatch.filter(filenames, '*.raf'):
+				absolute_file_path = os.path.join(root, filename)
+				relpath = os.path.relpath(absolute_file_path, path)
+				self.index[relpath] = RafArchive(absolute_file_path)
 
-	def archives(self):
-		archives = list()
-		for item,raf in self.index.iteritems():
-			for path,archive in raf.index.iteritems():
-				archives.append(archive)
-		return archives
+	def raffiles(self):
+		raffiles = list()
+		for relpath, rafarchive in self.index.iteritems():
+			for path_in_raf, raffile in rafarchive.index.iteritems():
+				raffiles.append(raffile)
+		return raffiles
 
 	def search(self, text):
 		matching_archives = list()
-		for item,raf in self.index.iteritems():
-			for path,archive in raf.index.iteritems():
+		for item, raf in self.index.iteritems():
+			for path, archive in raf.index.iteritems():
 				if(re.search(text, path, re.IGNORECASE)):
 					matching_archives.append(archive)
 		return matching_archives

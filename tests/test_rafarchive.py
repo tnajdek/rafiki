@@ -3,15 +3,15 @@ import os
 import unittest
 import shutil
 from raf.utils import mkdir_p, convert_lol_path
-from raf.raf import RafArchive
+from raf.raf import RafFile, RafArchive, BaseRafArchive
 
 TEST_ROOT = os.path.dirname(os.path.realpath(__file__))
 
 
 class TestExporting(unittest.TestCase):
 	def setUp(self):
-		self.archive = RafArchive(os.path.join(TEST_ROOT, "data", "Archive_194801136.raf"))
 		self.tmp_dir = os.path.join(TEST_ROOT, 'tmp')
+		self.archive = RafArchive(os.path.join(TEST_ROOT, "data", '0.0.0.0', "Archive_194801136.raf"))
 		mkdir_p(self.tmp_dir)
 
 	def tearDown(self):
@@ -32,7 +32,22 @@ class TestExporting(unittest.TestCase):
 			self.assertEqual(data[len(data) / 2 - 4:(len(data) / 2) + 4], 'testword')
 			self.assertEqual(data, self.archive.index[path].data)
 
-	def test_content_read(self):
+	def test_read_fake_raf(self):
+		fakeContent = "Aloha world."
+		fakeRafPath = os.path.join(self.tmp_dir, 'fake.raf')
+		fakeArchive = BaseRafArchive(fakeRafPath)
+		fakefile = RafFile(fakeArchive)
+		fakefile.path = "DATA/Trolls/Are/funny.txt"
+		fakefile.insert(fakeContent)
+		fakeArchive.addRafFile(fakefile)
+		fakeArchive.export(self.tmp_dir)
+
+		archive = RafArchive(fakeRafPath)
+		self.assertEqual(len(archive.index.keys()), 1)
+		self.assertIn(fakefile.path, archive.index.keys)
+		self.assertEqual(archive.index[fakefile.path].extract(), fakeContent)
+
+	def test_read_real_raf(self):
 		file_name = "DATA/Menu/fontconfig_pl_PL.txt"
 		self.assertIn(file_name, self.archive.index)
 		raf_file = self.archive.index[file_name]
