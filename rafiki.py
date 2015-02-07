@@ -92,7 +92,7 @@ if(args.action == 'pack'):
 		archives.add(raf_file.archive)
 
 	for archive in archives:
-		archive_override_path = os.path.join(basepath, archive.lol_patch_string, os.path.basename(archive.path))
+		archive_override_path = os.path.join(basepath, archive.relpath)
 		mkdir_p(os.path.dirname(archive_override_path))
 		print("Writing archive \"%s\"" % archive_override_path)
 		archive.save(archive_override_path)

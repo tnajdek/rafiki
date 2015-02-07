@@ -208,6 +208,7 @@ class RafCollection():
 				absolute_file_path = os.path.join(root, filename)
 				relpath = os.path.relpath(absolute_file_path, path)
 				self.index[relpath] = RafArchive(absolute_file_path)
+				self.index[relpath].relpath = relpath
 
 	def raffiles(self):
 		raffiles = list()
@@ -256,6 +257,7 @@ class RafInstallation(object):
 
 		if(installation_path):
 			if(os.path.exists(installation_path)):
+				self.installation_path = installation_path
 				self.installation_path_exists = True
 			else:
 				raise Exception("Installation path specified ({}) is incorrect".format(installation_path))
