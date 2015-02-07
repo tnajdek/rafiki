@@ -3,15 +3,10 @@ import os
 import sys
 import argparse
 
-from raf.raf import RafCollection
+from raf.raf import RafCollection, RafInstallation
 from raf.utils import mkdir_p, convert_lol_path
 
 SCRIPT_ROOT = os.path.dirname(os.path.realpath(__file__))
-
-FILE_ARCHIVE_POSSIBLE_PATHS = [
-	'Contents/LoL/RADS/projects/lol_game_client/filearchives/',
-	'rads/projects/lol_game_client/filearchives/'
-]
 
 parser = argparse.ArgumentParser(description='Extract or Pack files from/to Riot Archive Format, optionally filtering extracted file paths')
 parser.add_argument('action',
@@ -62,17 +57,14 @@ if(not os.path.isdir(args.source_path)):
 	sys.exit()
 
 
-for path in FILE_ARCHIVE_POSSIBLE_PATHS:
-	source_path = os.path.join(args.source_path, convert_lol_path(path))
-	if(os.path.isdir(source_path)):
-		break
-
-if(not os.path.isdir(source_path)):
-	print("Unable to find filearchives in \"%s\", are you sure this is valid path to Leauge of Legends?" % source_path)
+try:
+	ri = RafInstallation(args.source_path)
+	collection = ri.get_raf_collection()
+except Exception:
+	print("Unable to find filearchives in \"%s\", are you sure this is valid path to Leauge of Legends?" % args.source_path)
 	sys.exit()
 
 
-collection = RafCollection(source_path)
 if(args.filter):
 	files = collection.search(args.filter)
 else:
@@ -103,4 +95,4 @@ if(args.action == 'pack'):
 		archive_override_path = os.path.join(basepath, archive.lol_patch_string, os.path.basename(archive.path))
 		mkdir_p(os.path.dirname(archive_override_path))
 		print("Writing archive \"%s\"" % archive_override_path)
-		archive.export(archive_override_path)
+		archive.save(archive_override_path)

@@ -3,6 +3,7 @@ import zlib
 import os
 import fnmatch
 import re
+import platform
 
 from utils import riot_hash
 
@@ -225,3 +226,50 @@ class RafCollection():
 				if(re.search(text, path_in_raf, flags=flags)):
 					matching_raffiles.append(raffile)
 		return matching_raffiles
+
+
+class RafInstallation(object):
+	INSTALLATION_TYPICAL = {
+		'windows': [
+			"C:\Riot Games\League of Legends",
+			"C:\League of Legends",
+			"C:\Program Files\League of Legends",
+			"C:\Program Files (x86)\League of Legends"
+		],
+		'darwin': [
+			"/Applications/League of Legends.app/",
+			"~/Applications/League of Legends.app/",
+		]
+	}
+	FILE_ARCHIVE_POSSIBLE_PATHS = {
+		'darwin': ('Contents', 'LoL', 'RADS', 'projects', 'lol_game_client', 'filearchives'),
+		'windows': ('rads', 'projects', 'lol_game_client', 'filearchives')
+	}
+
+	def __init__(self, installation_path=None):
+		self.platform = platform.system().lower()
+		if(self.platform not in self.INSTALLATION_TYPICAL.keys()):
+			raise Exception("Platform {} isn't supported, sorry. Currently only Windows and OSX is suported. {}".format(
+				self.platform,
+				self.platform == 'linux' and " Actually if you've managed to run LOL on Linux, even though it's not supported, you'll definitely be able to run Rafiki, which is a glorified python script, on Linux. Fell free to ping me at tom@doppnet.com!" or ""
+			))
+
+		if(installation_path):
+			if(os.path.exists(installation_path)):
+				self.installation_path_exists = True
+			else:
+				raise Exception("Installation path specified ({}) is incorrect".format(installation_path))
+		else:
+			possible_install_dirs = self.INSTALLATION_TYPICAL[self.platform]
+			self.installation_path = possible_install_dirs[0]
+			self.installation_path_exists = False
+			for possible_dir in possible_install_dirs:
+				if(os.path.exists(possible_dir)):
+					self.installation_path = possible_dir
+					self.installation_path_exists = True
+
+	def get_raf_collection(self):
+		if(not os.path.exists(self.installation_path)):
+			raise Exception("Leauge of Legends installation path could not be found.")
+		archives_path = os.path.join(self.installation_path, *self.FILE_ARCHIVE_POSSIBLE_PATHS[self.platform])
+		return RafCollection(archives_path)
