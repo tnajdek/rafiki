@@ -15,8 +15,17 @@ class TestExporting(unittest.TestCase):
 		mkdir_p(self.tmp_dir)
 
 	def tearDown(self):
-		pass
 		shutil.rmtree(self.tmp_dir)
+
+	def test_writes_identical_dat_files(self):
+		exported_raf_file = os.path.join(self.tmp_dir, 'exported.raf')
+		self.archive.save(exported_raf_file)
+
+		src_dat_file_bin = open("{}.dat".format(self.archive.path), "rb").read()
+		dest_dat_file_bin = open("{}.dat".format(exported_raf_file), "rb").read()
+		import ipdb; ipdb.set_trace()
+
+		self.assertEqual(len(src_dat_file_bin), len(dest_dat_file_bin))
 
 	def test_dogfooding(self):
 		exported_raf_file = os.path.join(self.tmp_dir, 'exported.raf')

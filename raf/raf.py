@@ -13,27 +13,45 @@ class RafFile():
 		self.archive = archive
 		self.dat_file_location = self.archive.path + ".dat"
 		self.data = None
-		self.uncompressed = False
+		self.modified = False
+		self.original_file_compressed = False
 
 	def extract(self):
 		with open(self.dat_file_location, 'rb') as fd:
 			fd.seek(self.data_offset)
 			self.raw_data = fd.read(self.data_size)
-			# some data is compressed with zlib, some is not
-			try:
-				self.data = zlib.decompress(self.raw_data)
-			except Exception:
-				self.data = self.raw_data
-			self.uncompressed = True
+			# print("With offset {} and length {} I've got {} of data".format(self.data_offset, self.data_size, len(self.raw_data)))
+			# if(len(self.raw_data) == 0):
+			# 	import ipdb; ipdb.set_trace()
+
+		# some data is compressed with zlib, some is not
+		try:
+			self.data = zlib.decompress(self.raw_data)
+			self.original_file_compressed = True
+		except Exception:
+			self.data = self.raw_data
+
 		return self.data
 
 	def insert(self, data):
+		self.modified = True
 		self.data = data
-		if(self.uncompressed):
-			self.raw_data = data
-		else:
+		if(self.original_file_compressed):
 			self.raw_data = zlib.compress(data)
+		else:
+			self.raw_data = data
 		self.data_size = len(self.raw_data)
+
+	def unload(self):
+		"""
+		Unloads data from the memory but keeps meta data
+		"""
+		del self.raw_data
+		self.data = None
+		self.modified = False
+		self.original_file_compressed = False
+		
+
 
 
 class BaseRafArchive(object):
@@ -186,11 +204,19 @@ class BaseRafArchive(object):
 
 			assert eof == f.tell()
 
+		# extract all data before opening any file descriptors for writing
+		# raf_file might need to open file for reading before writing
+		for raf_file in self.files:
+			if(not raf_file.data):
+				extracted_data = raf_file.extract()
+
 		with open(save_path + ".dat", "wb") as f:
 			for raf_file in self.files:
-				if(not raf_file.data):
-					raf_file.extract()
 				f.write(raf_file.raw_data)
+
+		# unload files to save memory
+		for raf_file in self.files:
+			raf_file.unload()
 
 
 class RafArchive(BaseRafArchive):
