@@ -236,23 +236,23 @@ class RafCollection():
 				self.index[relpath] = RafArchive(absolute_file_path)
 				self.index[relpath].relpath = relpath
 
-	def raffiles(self):
-		raffiles = list()
-		for relpath, rafarchive in self.index.iteritems():
-			for path_in_raf, raffile in rafarchive.index.iteritems():
-				raffiles.append(raffile)
-		return raffiles
+	def search(self, text, **kwargs):
+		return self.raffiles(search=text, **kwargs)
 
-	def search(self, text, caseinsensitive=True):
-		matching_raffiles = list()
+	def raffiles(self, search=None, caseinsensitive=True):
+		raffiles = list()
 		flags = 0
 		if(caseinsensitive):
 			flags = re.IGNORECASE
-		for relpath, rafarchive in self.index.iteritems():
+
+		sortlist = [(key, value) for key, value in self.index.iteritems()]
+		sortlist.sort(key=lambda i: (len(i[0]), i[0]))
+
+		for relpath, rafarchive in sortlist:
 			for path_in_raf, raffile in rafarchive.index.iteritems():
-				if(re.search(text, path_in_raf, flags=flags)):
-					matching_raffiles.append(raffile)
-		return matching_raffiles
+				if(search is None or re.search(search, path_in_raf, flags=flags)):
+					raffiles.append(raffile)
+		return raffiles
 
 
 class RafInstallation(object):
