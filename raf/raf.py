@@ -20,9 +20,6 @@ class RafFile():
 		with open(self.dat_file_location, 'rb') as fd:
 			fd.seek(self.data_offset)
 			self.raw_data = fd.read(self.data_size)
-			# print("With offset {} and length {} I've got {} of data".format(self.data_offset, self.data_size, len(self.raw_data)))
-			# if(len(self.raw_data) == 0):
-			# 	import ipdb; ipdb.set_trace()
 
 		# some data is compressed with zlib, some is not
 		try:
@@ -46,12 +43,12 @@ class RafFile():
 		"""
 		Unloads data from the memory but keeps meta data
 		"""
-		del self.raw_data
+		if(hasattr(self, 'raw_data')):
+			del self.raw_data
+
 		self.data = None
 		self.modified = False
 		self.original_file_compressed = False
-		
-
 
 
 class BaseRafArchive(object):

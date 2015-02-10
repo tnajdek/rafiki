@@ -76,7 +76,7 @@ if(args.action == 'extract'):
 		raf_file_path = convert_lol_path(raf_file.path)
 		mkdir_p(basepath + os.sep + os.path.dirname(raf_file_path))
 		with open(basepath + os.sep + raf_file_path, 'wb') as target_file:
-	 		target_file.write(data)
+			target_file.write(data)
 
 if(args.action == 'pack'):
 	archives = set()

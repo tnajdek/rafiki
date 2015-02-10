@@ -23,23 +23,28 @@ class TestExporting(unittest.TestCase):
 
 		src_dat_file_bin = open("{}.dat".format(self.archive.path), "rb").read()
 		dest_dat_file_bin = open("{}.dat".format(exported_raf_file), "rb").read()
-		import ipdb; ipdb.set_trace()
 
 		self.assertEqual(len(src_dat_file_bin), len(dest_dat_file_bin))
 
 	def test_dogfooding(self):
-		exported_raf_file = os.path.join(self.tmp_dir, 'exported.raf')
+		data_store = dict()
 		for path, raf_file in self.archive.index.iteritems():
 			data = raf_file.extract()
 			data = data[:len(data) / 2] + "testword" + data[:len(data) / 2]
+			data_store[path] = data
 			raf_file.insert(data)
-		self.archive.save(exported_raf_file)
+		exported_raf_file_path = os.path.join(self.tmp_dir, 'exported.raf')
+		self.archive.save(exported_raf_file_path)
+		for path, raf_file in self.archive.index.iteritems():
+			raf_file.unload()
+		self.archive = None
 
-		exported_archive = RafArchive(exported_raf_file)
-		for path, raf_file in exported_archive.index.iteritems():
+		modified_raf_archive = RafArchive(exported_raf_file_path)
+		for path, raf_file in modified_raf_archive.index.iteritems():
 			data = raf_file.extract()
+			target_data = data_store[path]
 			self.assertEqual(data[len(data) / 2 - 4:(len(data) / 2) + 4], 'testword')
-			self.assertEqual(data, self.archive.index[path].data)
+			self.assertEqual(data, target_data)
 
 	def test_read_fake_raf(self):
 		fakeContent = "Aloha world."
