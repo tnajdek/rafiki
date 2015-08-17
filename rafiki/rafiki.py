@@ -15,6 +15,8 @@ import fnmatch
 import re
 import platform
 
+from builtins import bytes
+
 from .utils import riot_hash
 
 
@@ -62,7 +64,7 @@ class RafFile():
 
 
 class BaseRafArchive(object):
-    MAGIC_NUMBER = '\xf0\x0e\xbe\x18'
+    MAGIC_NUMBER = b'\xf0\x0e\xbe\x18'
 
     def __init__(self, path):
         self.files = list()
@@ -114,7 +116,8 @@ class BaseRafArchive(object):
                 path_length = struct.unpack("<I", f.read(4))[0]
                 f.seek(paths_list_offset + path_offset)
                 path = f.read(path_length)
-                path = path.strip('\x00')
+                path = path.strip(b'\x00')
+                path = path.decode('ascii')
                 self.paths.append(path)
 
             for raffile in self.files:
@@ -194,12 +197,11 @@ class BaseRafArchive(object):
 
             paths_data = list()
             for path in self.paths:
-                path = path + "\x00"
                 paths_data.append({
                     "path_offset": path_offset - paths_list_offest,
-                    "path_length": len(path)
+                    "path_length": len(path) + 1
                 })
-                path_offset = path_offset + len(path)
+                path_offset = path_offset + len(path) + 1
 
             for path_data in paths_data:
                 f.write(struct.pack("<I", path_data['path_offset']))
@@ -207,7 +209,7 @@ class BaseRafArchive(object):
 
             for i in range(len(self.paths)):
                 assert paths_list_offest + paths_data[i]['path_offset'] == f.tell()
-                f.write(self.paths[i] + "\x00")
+                f.write(self.paths[i].encode('ascii') + b'\x00')
 
             assert eof == f.tell()
 
@@ -252,11 +254,11 @@ class RafCollection():
         if(caseinsensitive):
             flags = re.IGNORECASE
 
-        sortlist = [(key, value) for key, value in self.index.iteritems()]
+        sortlist = [(key, value) for key, value in self.index.items()]
         sortlist.sort(key=lambda i: (len(i[0]), i[0]))
 
         for relpath, rafarchive in sortlist:
-            for path_in_raf, raffile in rafarchive.index.iteritems():
+            for path_in_raf, raffile in rafarchive.index.items():
                 if(search is None or re.search(search, path_in_raf, flags=flags)):
                     raffiles.append(raffile)
         return raffiles

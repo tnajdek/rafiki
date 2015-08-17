@@ -29,26 +29,26 @@ class TestExporting(unittest.TestCase):
 
     def test_dogfooding(self):
         data_store = dict()
-        for path, raf_file in self.archive.index.iteritems():
+        for path, raf_file in self.archive.index.items():
             data = raf_file.extract()
-            data = data[:len(data) / 2] + "testword" + data[:len(data) / 2]
+            data = data[:len(data) // 2] + b'testword' + data[:len(data) // 2]
             data_store[path] = data
             raf_file.insert(data)
         exported_raf_file_path = os.path.join(self.tmp_dir, 'exported.raf')
         self.archive.save(exported_raf_file_path)
-        for path, raf_file in self.archive.index.iteritems():
+        for path, raf_file in self.archive.index.items():
             raf_file.unload()
         self.archive = None
 
         modified_raf_archive = RafArchive(exported_raf_file_path)
-        for path, raf_file in modified_raf_archive.index.iteritems():
+        for path, raf_file in modified_raf_archive.index.items():
             data = raf_file.extract()
             target_data = data_store[path]
-            self.assertEqual(data[len(data) / 2 - 4:(len(data) / 2) + 4], 'testword')
+            self.assertEqual(data[len(data) // 2 - 4:(len(data) // 2) + 4], b'testword')
             self.assertEqual(data, target_data)
 
     def test_read_fake_raf(self):
-        fakeContent = "Aloha world."
+        fakeContent = b'Aloha world.'
         fakeRafPath = os.path.join(self.tmp_dir, 'fake.raf')
         fakeArchive = BaseRafArchive(fakeRafPath)
         fakefile = RafFile(fakeArchive)
@@ -67,22 +67,22 @@ class TestExporting(unittest.TestCase):
         self.assertIn(file_name, self.archive.index)
         raf_file = self.archive.index[file_name]
         raf_data = raf_file.extract()
-        self.assertIn("karze wyzwiska homofobiczne czy rasowe", raf_data)
+        self.assertIn(b'karze wyzwiska homofobiczne czy rasowe', raf_data)
 
     def test_content_write(self):
-        dummy_contents = "Hello Word"
+        dummy_contents = b'Hello Word'
         exported_raf_file = os.path.join(self.tmp_dir, 'minimap_export.raf')
-        for path, raf_file in self.archive.index.iteritems():
+        for path, raf_file in self.archive.index.items():
             if(path.find("fontconfig_pl_PL") > -1):
                 data = raf_file.extract()
-                with open(os.path.join(self.tmp_dir, os.path.basename(convert_lol_path(path))), 'w') as f:
+                with open(os.path.join(self.tmp_dir, os.path.basename(convert_lol_path(path))), 'wb') as f:
                     f.write(dummy_contents)
                 with open(os.path.join(self.tmp_dir, os.path.basename(convert_lol_path(path))), 'rb') as f:
                     raf_file.insert(f.read())
 
         self.archive.save(exported_raf_file)
         exported_archive = RafArchive(exported_raf_file)
-        for path, raf_file in exported_archive.index.iteritems():
+        for path, raf_file in exported_archive.index.items():
             if(path.find("fontconfig_pl_PL") > -1):
                 data = raf_file.extract()
                 self.assertEqual(data, dummy_contents)
@@ -124,8 +124,8 @@ class TestOverridesInCollections(unittest.TestCase):
         fakeArchive.save()
 
     def test_overrides(self):
-        badContent = "bad"
-        goodContent = "good"
+        badContent = b'bad'
+        goodContent = b'good'
 
         for i in range(10):
             self.build_fake_archive(i, badContent)
