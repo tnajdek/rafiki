@@ -27,8 +27,6 @@ def convert_lol_path(path):
 def riot_hash(string):
     hash = 0
     temp = 0
-    # if(type(string) == bytes):
-    #     string = string.decode('ascii')
 
     for char in string:
         hash = (hash << 4) + ord(char.lower())
