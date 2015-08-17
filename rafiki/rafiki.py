@@ -5,7 +5,7 @@ import fnmatch
 import re
 import platform
 
-from utils import riot_hash
+from .utils import riot_hash
 
 
 class RafFile():
