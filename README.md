@@ -5,7 +5,7 @@ RAFIKI - Riot Archive File extractor & packer
 
 Python API for reading and writing to a **raf** format used by RIOT's game Leauge of Legends. Tested on Mac and Windows (for platform's native version of the game).
 
-*** This is low-level API exclusively for dealign with RAF files. If you're after multi-screen/ultrawide resolution support mod, see: [lol-eyefinity-hud-fixer](https://github.com/tnajdek/lol-eyefinity-hud-fixer).
+*** This is low-level API exclusively for dealign with RAF files. If you're after multi-screen/ultrawide resolution support mod, see: [lol-eyefinity-surround-fixhud](https://github.com/tnajdek/lol-eyefinity-surround-fixhud).
 
 Helper/Example Scripts
 ----------------------
