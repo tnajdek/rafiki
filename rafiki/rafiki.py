@@ -19,7 +19,6 @@ from builtins import bytes
 
 from .utils import riot_hash
 
-
 class RafFile():
     def __init__(self, archive):
         self.archive = archive
@@ -62,6 +61,97 @@ class RafFile():
         self.modified = False
         self.original_file_compressed = False
 
+
+class BaseRafManifest(object):
+    RLSM_HEAD = b'\x52\x4c\x53\x4d'
+    RLSM_MAGIC = b'\x01\x00\x01\x00'
+
+    def __init__(self, path):
+        self.dirs = list()
+        self.files = list()
+        self.strings = list()
+        self.index = dict()
+        self.path = path
+
+    def open(self):
+        with open(self.path, "rb") as f:
+            head = f.read(4)
+            magic = f.read(4)
+            assert head == self.RLSM_HEAD
+            assert magic == self.RLSM_MAGIC
+
+            self.entry_count = struct.unpack("<I", f.read(4))[0]
+            self.version = struct.unpack("<I", f.read(4))[0]
+
+            self.dir_count = struct.unpack("<I", f.read(4))[0]
+            for i in range(self.dir_count):
+                rdir = dict()
+                rdir['name_index'] = struct.unpack("<I", f.read(4))[0]
+                rdir['subdir_index'] = struct.unpack("<I", f.read(4))[0]
+                rdir['subdir_count'] = struct.unpack("<I", f.read(4))[0]
+                rdir['file_index'] = struct.unpack("<I", f.read(4))[0]
+                rdir['file_count'] = struct.unpack("<I", f.read(4))[0]
+                self.dirs.append(rdir)
+
+            self.file_count = struct.unpack("<I", f.read(4))[0]
+
+            for i in range(self.file_count):
+                rfile = dict()
+                rfile['name_index'] = struct.unpack("<I", f.read(4))[0]
+                rfile['version'] = struct.unpack("<I", f.read(4))[0]
+                rfile['md5'] = f.read(16)
+                rfile['flags'] = struct.unpack("<I", f.read(4))[0]
+                rfile['size'] = struct.unpack("<I", f.read(4))[0]
+                rfile['compressed_size'] = struct.unpack("<I", f.read(4))[0]
+                rfile['tail'] = f.read(8)
+                self.files.append(rfile)
+
+            string_count = struct.unpack("<I", f.read(4))[0]
+            string_size = struct.unpack("<I", f.read(4))[0]
+
+            strings = f.read(string_size - 1).split(b'\x00')
+            self.strings = [s.decode('ascii') for s in strings]
+            assert f.read() == b'\x00' # termination
+
+    def save(self, save_path=None):
+        save_path = save_path or self.path
+        with open(save_path, "wb") as f:
+            f.write(struct.pack("<I", self.RLSM_HEAD))
+            f.write(struct.pack("<I", self.RLSM_MAGIC))
+            f.write(struct.pack("<I", self.entry_count))
+            f.write(struct.pack("<I", self.version))
+
+            f.write(struct.pack("<I", len(self.dirs)))
+
+            for rdir in self.dirs:
+                f.write(struct.pack("<I", rdir['name_index']))
+                f.write(struct.pack("<I", rdir['subdir_index']))
+                f.write(struct.pack("<I", rdir['subdir_count']))
+                f.write(struct.pack("<I", rdir['file_index']))
+                f.write(struct.pack("<I", rdir['file_count']))
+
+            f.write(struct.pack("<I", len(self.files)))
+
+            for rfile in self.files:
+                f.write(struct.pack("<I", rfile['name_index']))
+                f.write(struct.pack("<I", rfile['version']))
+                f.write(rfile['md5'])
+                f.write(struct.pack("<I", rfile['flags']))
+                f.write(struct.pack("<I", rfile['size']))
+                f.write(struct.pack("<I", rfile['compressed_size']))
+                f.write(rfile['tail'])
+
+            strings = b'\x00'.join(self.strings) + b'\x00'
+
+            f.write(struct.pack("<I", len(self.strings)))
+            f.write(struct.pack("<I", len(strings)))
+            f.write(strings)
+
+
+class RafManifest(BaseRafManifest):
+    def __init__(self, path):
+        super(RafManifest, self).__init__(path)
+        self.open()
 
 class BaseRafArchive(object):
     MAGIC_NUMBER = b'\xf0\x0e\xbe\x18'
