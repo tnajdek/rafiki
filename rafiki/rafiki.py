@@ -17,7 +17,7 @@ import platform
 
 from builtins import bytes
 
-from .utils import riot_hash
+from .utils import riot_hash, int_to_ver, ver_to_int
 
 class RafFile():
     def __init__(self, archive):
@@ -392,6 +392,11 @@ class RafInstallation(object):
         'windows': ('rads', 'projects', 'lol_game_client', 'filearchives')
     }
 
+    FILE_MANIFEST_POSSIBLE_PATHS = {
+        'darwin': ('Contents', 'LoL', 'RADS', 'projects', 'lol_game_client', 'releases'),
+        'windows': ('rads', 'projects', 'lol_game_client', 'releases')
+    }
+
     def __init__(self, installation_path=None):
         self.platform = platform.system().lower()
         if(self.platform not in self.INSTALLATION_TYPICAL.keys()):
@@ -420,3 +425,11 @@ class RafInstallation(object):
             raise Exception("Leauge of Legends installation path could not be found.")
         archives_path = os.path.join(self.installation_path, *self.FILE_ARCHIVE_POSSIBLE_PATHS[self.platform])
         return RafCollection(archives_path)
+
+    def get_raf_manifest(self):
+        if(not os.path.exists(self.installation_path)):
+            raise Exception("Leauge of Legends installation path could not be found.")
+        archives_path = os.path.join(self.installation_path, *self.FILE_MANIFEST_POSSIBLE_PATHS[self.platform])
+        versions = os.listdir(archives_path)
+        max_ver  = int_to_ver(max([ver_to_int(v) for v in versions]))
+        return RafManifest(os.path.join(archives_path, max_ver, 'releasemanifest'))

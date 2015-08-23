@@ -2,9 +2,10 @@
 import os
 import unittest
 import shutil
-from rafiki import RafFile, RafArchive, RafCollection, RafManifest
+from rafiki import RafFile, RafArchive, RafCollection, RafManifest, RafInstallation
 from rafiki.rafiki import BaseRafArchive
 from rafiki.utils import mkdir_p, convert_lol_path
+from unittest.mock import MagicMock, patch
 
 TEST_ROOT = os.path.dirname(os.path.realpath(__file__))
 
@@ -12,7 +13,7 @@ TEST_ROOT = os.path.dirname(os.path.realpath(__file__))
 class TestExporting(unittest.TestCase):
     def setUp(self):
         self.tmp_dir = os.path.join(TEST_ROOT, 'tmp')
-        self.archive = RafArchive(os.path.join(TEST_ROOT, "data", '0.0.0.0', "Archive_194801136.raf"))
+        self.archive = RafArchive(os.path.join(TEST_ROOT, "data", 'filearchives', '0.0.0.0', "Archive_194801136.raf"))
         mkdir_p(self.tmp_dir)
 
     def tearDown(self):
@@ -147,14 +148,14 @@ class TestManifest(unittest.TestCase):
         shutil.rmtree(self.tmp_dir)
 
     def test_reading_manifest(self):
-        manifest = RafManifest(os.path.join(TEST_ROOT, "data", "releasemanifest"))
+        manifest = RafManifest(os.path.join(TEST_ROOT, "data", "releases", "0.0.2.0", "releasemanifest"))
         matches = manifest.find('clarity')
         self.assertIn('/DATA/Menu/HUD/RenderUI/Clarity_RenderUI.bin', matches)
         file_data = manifest.file_tree['/DATA/Menu/HUD/RenderUI/Clarity_RenderUI.bin']
         self.assertEqual(file_data['size'], 240323)
 
     def test_writing_manifest(self):
-        manifest = RafManifest(os.path.join(TEST_ROOT, "data", "releasemanifest"))
+        manifest = RafManifest(os.path.join(TEST_ROOT, "data", "releases", "0.0.2.0", "releasemanifest"))
         file_data = manifest.file_tree['/DATA/Menu/HUD/RenderUI/Clarity_RenderUI.bin']
         file_data['size'] = 1234
         my_manifest_path = os.path.join(self.tmp_dir, 'mymanifest')
@@ -163,5 +164,31 @@ class TestManifest(unittest.TestCase):
         my_file_data = my_manifest.file_tree['/DATA/Menu/HUD/RenderUI/Clarity_RenderUI.bin']
         self.assertEqual(my_file_data['size'], 1234)
 
+class TestInstallation(unittest.TestCase):
+    def setUp(self):
+        self.install_dir = os.path.join(TEST_ROOT, 'fakelol')
 
+    def test_installation(self):
+        with patch('platform.system', MagicMock(return_value="windows")):
+            ri = RafInstallation(self.install_dir)
+            rc = ri.get_raf_collection()
+            rm = ri.get_raf_manifest()
+            file_data = rm.file_tree['/DATA/Menu/HUD/RenderUI/Clarity_RenderUI.bin']
+            self.assertEqual(file_data['size'], 240323)
+            raffiles = rc.search("pl_PL")
+            self.assertEqual(len(raffiles), 1)
+            self.assertEqual(raffiles[0].path, "DATA/Menu/fontconfig_pl_PL.txt")
 
+        with patch('platform.system', MagicMock(return_value="darwin")):
+            ri = RafInstallation(self.install_dir)
+            rc = ri.get_raf_collection()
+            rm = ri.get_raf_manifest()
+            file_data = rm.file_tree['/DATA/Menu/HUD/RenderUI/Clarity_RenderUI.bin']
+            self.assertEqual(file_data['size'], 240323)
+            raffiles = rc.search("pl_PL")
+            self.assertEqual(len(raffiles), 1)
+            self.assertEqual(raffiles[0].path, "DATA/Menu/fontconfig_pl_PL.txt")
+
+        with patch('platform.system', MagicMock(return_value="atari")):
+            with self.assertRaises(Exception):
+                ri = RafInstallation(self.install_dir)

@@ -24,6 +24,18 @@ def convert_lol_path(path):
     return path
 
 
+def ver_to_int(ver):
+    version_int = ver.split('.')
+    version_int = (int(version_int[0]) << 24) | (int(version_int[1]) << 16) | (int(version_int[2]) << 8) | int(version_int[3])
+    return version_int
+
+def int_to_ver(n):
+    version_str = str((n >> 24) & 0xff)
+    version_str = version_str + '.' + str((n >> 16) & 0xff)
+    version_str = version_str + '.' + str((n >> 8) & 0xff)
+    version_str = version_str + '.' + str(n & 0xff)
+    return version_str
+
 def riot_hash(string):
     hash = 0
     temp = 0
