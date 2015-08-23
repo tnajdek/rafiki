@@ -5,7 +5,10 @@ import shutil
 from rafiki import RafFile, RafArchive, RafCollection, RafManifest, RafInstallation
 from rafiki.rafiki import BaseRafArchive
 from rafiki.utils import mkdir_p, convert_lol_path
-from unittest.mock import MagicMock, patch
+try:
+    from unittest.mock import MagicMock, patch
+except ImportError:
+    from mock import MagicMock, patch
 
 TEST_ROOT = os.path.dirname(os.path.realpath(__file__))
 
