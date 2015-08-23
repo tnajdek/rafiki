@@ -161,7 +161,7 @@ class BaseRafManifest(object):
                 f.write(struct.pack("<I", rfile['compressed_size']))
                 f.write(rfile['tail'])
 
-            strings = b'\x00'.join(self.strings) + b'\x00'
+            strings = b'\x00'.join([s.encode('ascii') for s in self.strings]) + b'\x00'
 
             f.write(struct.pack("<I", len(self.strings)))
             f.write(struct.pack("<I", len(strings)))
