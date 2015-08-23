@@ -91,7 +91,6 @@ class BaseRafManifest(object):
     def find(self, regex):
         return [p for p in self.file_tree for m in [re.search(regex, p, re.IGNORECASE)] if m]
 
-
     def open(self):
         with open(self.path, "rb") as f:
             head = f.read(4)
@@ -354,6 +353,7 @@ class RafCollection():
                 relpath = os.path.relpath(absolute_file_path, path)
                 self.index[relpath] = RafArchive(absolute_file_path)
                 self.index[relpath].relpath = relpath
+                self.index[relpath].lol_version = ver_to_int(re.search('(\d+\.\d+\.\d+\.\d+)\/', relpath).group(1))
 
     def search(self, text, **kwargs):
         return self.raffiles(search=text, **kwargs)
