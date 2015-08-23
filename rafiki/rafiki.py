@@ -432,4 +432,6 @@ class RafInstallation(object):
         archives_path = os.path.join(self.installation_path, *self.FILE_MANIFEST_POSSIBLE_PATHS[self.platform])
         versions = os.listdir(archives_path)
         max_ver  = int_to_ver(max([ver_to_int(v) for v in versions]))
-        return RafManifest(os.path.join(archives_path, max_ver, 'releasemanifest'))
+        manifest = RafManifest(os.path.join(archives_path, max_ver, 'releasemanifest'))
+        manifest.lol_version = max_ver
+        return manifest
