@@ -1,2 +1,2 @@
 #!/usr/bin/env sh
-nosetests tests/*.py
+nosetests --with-coverage --cover-package=rafiki

@@ -1,1 +1,1 @@
-from .rafiki import RafFile, RafArchive, RafCollection, RafInstallation
+from .rafiki import RafFile, RafArchive, RafCollection, RafInstallation, RafManifest

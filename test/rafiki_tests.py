@@ -2,7 +2,7 @@
 import os
 import unittest
 import shutil
-from rafiki import RafFile, RafArchive, RafCollection
+from rafiki import RafFile, RafArchive, RafCollection, RafManifest
 from rafiki.rafiki import BaseRafArchive
 from rafiki.utils import mkdir_p, convert_lol_path
 
@@ -136,3 +136,32 @@ class TestOverridesInCollections(unittest.TestCase):
         rf = raffiles.pop()
         data = rf.extract()
         self.assertEqual(data, goodContent)
+
+
+class TestManifest(unittest.TestCase):
+    def setUp(self):
+        self.tmp_dir = os.path.join(TEST_ROOT, 'tmp')
+        mkdir_p(self.tmp_dir)
+
+    def tearDown(self):
+        shutil.rmtree(self.tmp_dir)
+
+    def test_reading_manifest(self):
+        manifest = RafManifest(os.path.join(TEST_ROOT, "data", "releasemanifest"))
+        matches = manifest.find('clarity')
+        self.assertIn('/DATA/Menu/HUD/RenderUI/Clarity_RenderUI.bin', matches)
+        file_data = manifest.file_tree['/DATA/Menu/HUD/RenderUI/Clarity_RenderUI.bin']
+        self.assertEqual(file_data['size'], 240323)
+
+    def test_writing_manifest(self):
+        manifest = RafManifest(os.path.join(TEST_ROOT, "data", "releasemanifest"))
+        file_data = manifest.file_tree['/DATA/Menu/HUD/RenderUI/Clarity_RenderUI.bin']
+        file_data['size'] = 1234
+        my_manifest_path = os.path.join(self.tmp_dir, 'mymanifest')
+        manifest.save(my_manifest_path)
+        my_manifest = RafManifest(my_manifest_path)
+        my_file_data = my_manifest.file_tree['/DATA/Menu/HUD/RenderUI/Clarity_RenderUI.bin']
+        self.assertEqual(my_file_data['size'], 1234)
+
+
+

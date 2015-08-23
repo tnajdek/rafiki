@@ -70,8 +70,27 @@ class BaseRafManifest(object):
         self.dirs = list()
         self.files = list()
         self.strings = list()
-        self.index = dict()
+        self.file_tree = dict()
         self.path = path
+
+    def _generate_file_tree(self, index=0, path=''):
+        if self.dirs[index]['subdir_index'] == 0:
+            return
+        for i in range(self.dirs[index]['subdir_count']):
+            string_index = self.dirs[self.dirs[index]['subdir_index'] + i]['name_index']
+            sdir_path = path + '/' + self.strings[string_index]
+            self._generate_file_tree(self.dirs[index]['subdir_index'] + i, sdir_path)
+        self._add_files_to_tree(index, path)
+
+    def _add_files_to_tree(self, index, path):
+        for i in range(self.dirs[index]['file_count']):
+            file_ = self.files[self.dirs[index]['file_index'] + i]
+            file_path = path + '/' + self.strings[file_['name_index']]
+            self.file_tree[file_path]  = file_
+
+    def find(self, regex):
+        return [p for p in self.file_tree for m in [re.search(regex, p, re.IGNORECASE)] if m]
+
 
     def open(self):
         with open(self.path, "rb") as f:
@@ -112,12 +131,13 @@ class BaseRafManifest(object):
             strings = f.read(string_size - 1).split(b'\x00')
             self.strings = [s.decode('ascii') for s in strings]
             assert f.read() == b'\x00' # termination
+        self._generate_file_tree()
 
     def save(self, save_path=None):
         save_path = save_path or self.path
         with open(save_path, "wb") as f:
-            f.write(struct.pack("<I", self.RLSM_HEAD))
-            f.write(struct.pack("<I", self.RLSM_MAGIC))
+            f.write(self.RLSM_HEAD)
+            f.write(self.RLSM_MAGIC)
             f.write(struct.pack("<I", self.entry_count))
             f.write(struct.pack("<I", self.version))
 
