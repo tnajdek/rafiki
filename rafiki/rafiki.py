@@ -353,7 +353,7 @@ class RafCollection():
                 relpath = os.path.relpath(absolute_file_path, path)
                 self.index[relpath] = RafArchive(absolute_file_path)
                 self.index[relpath].relpath = relpath
-                self.index[relpath].lol_version = ver_to_int(re.search('(\d+\.\d+\.\d+\.\d+)\/', relpath).group(1))
+                self.index[relpath].lol_version = ver_to_int(re.search('(\d+\.\d+\.\d+\.\d+)', relpath).group(1))
 
     def search(self, text, **kwargs):
         return self.raffiles(search=text, **kwargs)
