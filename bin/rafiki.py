@@ -68,7 +68,7 @@ except Exception:
 if(args.filter):
     files = collection.search(args.filter)
 else:
-    files = collection.archives()
+    files = collection.raffiles()
 
 if(args.action == 'extract'):
     for raf_file in files:
